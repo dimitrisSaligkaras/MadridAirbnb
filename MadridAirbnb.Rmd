@@ -1,0 +1,257 @@
+---
+title: "Εργασία EMOS Official Statistics and Data Analytics"
+output: html_notebook
+---
+
+ 
+Ερώτηση:Να βρεθεί ο host_name με τα περισσότερα listings (σε απόλυτο αριθμό)(Μονάδες 10)
+```{r}
+
+#ok
+library("stringr")
+library("dplyr")  
+library("haven")
+library("readr")
+library("ggplot2")
+listings%>%
+  select(host_name,host_id)%>%
+  group_by(host_id,host_name)%>%
+  summarise(v=n())%>%
+  arrange(-v)
+  
+  
+  
+
+```
+
+Ερώτηση:Τι ποσοστό των host είναι superhost;(Μονάδες 10)
+```{r}
+#ok
+
+
+#sunolika einai 20.837
+#opote metraw ta superhost apo thn antistoixh sthlh tou dataset listings_detailed kai diairw me #20837
+
+listings_detailed%>%
+  select(host_is_superhost)%>%
+  filter(host_is_superhost==T)%>%
+  summarise(v=n())%>%
+  mutate(percentage=v/20837)%>%
+  arrange(percentage)
+  
+  
+
+```
+
+Ερώτηση:Nα βρείτε τα ονόματα των καταλυμάτων τα οποία επισκέφτηκε ο χρήστης με τα περισσότερα reviews(Μονάδες 10)
+```{r}
+#tha xexwrisoume ton kathe xrhsth me thn metavlhth id apo to dataset reviews_detailed
+#vlepw oti uparxoun 20836 diaforetika id
+#ta reviwer_id einai ligotera dhladh epanalamvanontai
+#dhladh uparxoun diaforetika id ta opoia antistoixoun ston idio xrhsth
+
+#vriskw ton xrhsth me ta perissotera reviews apo to dataset reviews_detailed
+reviews_detailed%>%
+  select(reviewer_id,reviewer_name)%>%
+  group_by(reviewer_id,reviewer_name)%>%
+  tally()%>%
+  arrange(desc(n))
+#ara o xrhsths Israel 18544876
+
+#gia na vrw onomata katalumatwn pou episkefthke o sugkekrimenos prepei na kanw sunenwsh twn
+#datasets listings kai reviews_detailed
+names(listings)[names(listings) == "id"] <- "listing_id"
+
+a4=inner_join(listings,reviews_detailed,by="listing_id")
+a4%>%
+  select(host_name,reviewer_id,name)%>%
+  filter(reviewer_id=="18544876")%>%
+  group_by(host_name)
+  
+  
+```
+
+Ερώτηση:Με βάση τα στοιχεία του πίνακα reviews_detailed να βρείτε το πιο δημοφιλές κατάλυμα(συνολικός αριθμός reviews) και το όνομα του ατόμου που το οποίο πραγματοποίησε τις περισσότερες κριτικές για αυτό. (Μονάδες 10)
+```{r}
+
+#ok
+
+
+#h listing_id mas dinei kataluma
+reviews_detailed%>%
+  select(listing_id)%>%
+  group_by(listing_id)%>%
+ tally()%>%
+  arrange(desc(n))
+#vriskw oti perissoteres fores sunantaw to kataluma me kwdiko 93100 ara exei kai ta perissotera #reviews
+
+#paw na vrw to onoma tou atomou pou pragmatopoihse ta perissotera reviews gia to 93100
+
+reviews_detailed%>%
+  select(reviewer_id,reviewer_name,listing_id)%>%
+  filter(listing_id=="93100")%>%
+  group_by(reviewer_id,reviewer_name)%>%
+  tally()%>%
+  arrange(desc(n))
+  #ara h Mary
+```
+
+
+Ερώτηση:Ποιος μήνας από τους καταγραφόμενους(βλέπετε πίνακας calendar) είχε τα περισσότερα διαθέσιμα δωμάτια; (Μονάδες 10)
+```{r}
+#ok
+
+library("lubridate")
+library("xts")
+
+#dhmiourgia triwn kainouriwn sthlwn (year,month,day) oi opoies exoun ws stoixeia to xrono,mhna,mera
+#ths sthlhs date,antistoixa
+calendar=calendar %>% mutate(year=year(date))
+calendar=calendar %>% mutate(month=month(date))
+calendar=calendar %>% mutate(day=day(date))
+
+#parathrw oti h erwthsh de zhtaei na xexwrisoume gia paradeigma ton 9o tou 2019 apo ton 9o tou 2020
+#opote ta apotelesmata gia tous mhnes tha prokupsoun sugkentrwtika kai gia ta duo eth
+
+calendar%>%
+  select(available,month)%>%
+  filter(available==TRUE)%>%
+  group_by(month)%>%
+  tally()%>%
+  arrange(desc(n))%>%
+slice(1)
+```
+
+Ερώτηση:Βάση του πίνακα calendar και του reviews_detailed να βρείτε τα μέσα κέρδη(συνολικά έσοδα/πλήθος κατηγορίας) των καταλυμάτων ως προς τις κατηγορίες της στήλης host_response_time (Μονάδες 10)
+```{r}
+#h sthlh host_response_time vrisketai sto dataset listings_detailed
+
+#parathrw oti h sthlh id afora ta katalumata kai ta stoixeia ths einai auta pou exei kai h #listing_id tou reviews_detailed
+#opote alazw to onoma se listing_id
+calendar$price <- as.numeric(str_sub(calendar$price,2))
+listings_detailed$id=as.numeric(as.character((listings_detailed$id)))
+b3=calendar%>% 
+  inner_join(listings_detailed,by =c("listing_id"="id"))%>%
+  select(host_response_time,name,price.x)%>%
+  group_by(host_response_time)%>%
+  summarize(meaninc1=mean(price.x,na.rm=T))%>%
+  arrange(-meaninc1)
+
+listings_detailed$price=as.numeric(str_sub(listings_detailed$price,2))
+listings_detailed$id=as.numeric(as.character(listings_detailed$id))
+listings_detailed$number_of_reviews=as.numeric(listings_detailed$number_of_reviews)
+b4=listings_detailed%>%
+  inner_join(reviews_detailed,by=c("id"="listing_id"))%>%
+  group_by(id)%>%
+  mutate(v=(price)*(number_of_reviews ))%>%
+  distinct(id,.keep_all = T)%>%
+  group_by(host_response_time)%>%
+  summarise(meaninc2=mean(v,na.rm=T))%>%
+  arrange(desc(meaninc2))
+b4
+b5=inner_join(b3,b4,by="host_response_time")
+b5%>%
+  mutate(v5=(meaninc1+meaninc2)/2)
+```
+
+Ερώτηση:Να βρείτε τις μέσες τιμές(κόστος καταλύματος) για καταλύματα τύπου Entire home/apt τα οποία είχαν διαθεσιμότητα λιγότερο από 20 μέρες τον χρόνο (Μονάδες 5)
+```{r}
+#ok
+
+
+listings%>%
+  select(price,availability_365,room_type,listing_id)%>%
+  filter(availability_365<20&room_type=="Entire home/apt")%>%
+  group_by(listing_id)%>%
+ summarize(v1=mean(price))%>%
+  arrange(desc(v1))
+
+
+
+```
+
+Ερώτηση:Να βρείτε την μέση τιμή καταλυμάτων τύπου Entire home/apt στην περιοχή (neighbourhood_group) Arganzuela (Μονάδες 5)
+```{r}
+
+#ok
+
+
+#arxika metraw posa tetoia dwmatia yparxoun
+listings%>%
+  select(neighbourhood_group,room_type)%>%
+  filter(neighbourhood_group=="Arganzuela"&room_type=="Entire home/apt")%>%
+  tally()%>%
+  arrange(n)
+#ara 605
+
+#tha upologisw to athroisma twn timwn autwn twn dwmatiwn
+
+listings%>%
+  select(neighbourhood_group,price,room_type)%>%
+  filter(neighbourhood_group=="Arganzuela"&room_type=="Entire home/apt")%>%
+  group_by(neighbourhood_group)%>%
+  summarise(v=sum(price))%>%
+  arrange(v)
+#sunolo 77547
+
+meshtimh=77547/605
+meshtimh
+  
+```
+
+Ερώτηση:Να βρείτε τον συνολικό αριθμό reviews ανά έτος.Υπάρχει κάποιου είδους συσχέτιση του αριθμού των reviews με τον χρόνο;Να το δείξτε μέσω κατάλληλου διαγράμματος (Μονάδες 15)
+```{r}
+#ok
+
+library(lubridate)
+reviews=reviews %>% mutate(year=year(date))
+reviews%>%
+  select(year)%>%
+  group_by(year)%>%
+  tally()%>%
+  arrange(n)
+
+hist(reviews$year,
+     breaks="FD",
+     col="red",
+     xlab="year",
+     main="histogram")
+#ara kathws proxwrame apo to 2010 pros to 2019 exoume mia auxhsh twn reviews me exairesh oti
+#to 2018 eixame elafrws perissotera apo to 2019
+#vevaia to 2019 exei metrhthei mexri 18/09
+```
+
+Ερώτηση:Από τα διαθέσιμα στοιχεία που προκύπτουν από τον πίνακα calendar και reviews_detailed να βρεθούν τα 20 πιο επικερδή καταλύματα (Μονάδες 15)
+```{r}
+#ousiastika zhtaei gia olh th dekaetia
+#endiaferei sthn sthlh available na uparxei h endeixh false giati tote shmainei oti to spiti
+#noikiazotan
+#sto dataset calendar auto einai etoimo
+#sto datasset reviews_detailed oxi
+
+#upologismos twn kerdwn apo to calendar,gia kathe dwmatio,
+
+#h metavlhth listing_id mas dinei ousiastika thn tautothta tou kathe katalumatos
+b1=calendar%>%
+  filter(available==F)%>%
+  group_by(listing_id)%>%
+  summarise(k=sum(price))%>%
+  arrange(-k)
+b1
+dim(b1)
+#menei na ginei o upologismos apo 2010-03-14 ews 2019-09-18
+#tha paw sto dataset listings pou exw dhmiourghsei kai tha pollaplasiasw gia kathe listing id 
+#tis metavlhtes number_of_reviews kai price
+b2=listings%>%
+  select(price,number_of_reviews,listing_id)%>%
+  group_by(listing_id)%>%
+  summarise(v=price*(number_of_reviews ))%>%
+  arrange(desc(v))
+b2
+q=as.data.frame(full_join(b1,b2,by="listing_id"))
+q%>%
+  mutate(h=k+v)%>%
+  arrange(-h)
+
+```
+
