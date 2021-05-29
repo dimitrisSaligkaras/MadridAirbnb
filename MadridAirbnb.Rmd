@@ -1,5 +1,4 @@
 ---
-title: "Εργασία EMOS Official Statistics and Data Analytics"
 output: html_notebook
 ---
 
